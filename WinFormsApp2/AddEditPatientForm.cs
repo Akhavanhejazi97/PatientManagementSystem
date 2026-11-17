@@ -1,7 +1,10 @@
-﻿using PatientManagementSystem.Data;
+﻿using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+using PatientManagementSystem.Data;
 using PatientManagementSystem.Helpers;
 using PatientManagementSystem.Models;
 using System;
+using System.ComponentModel.DataAnnotations;
 using System.Windows.Forms;
 using WinFormsApp2.Extensions;
 
@@ -9,8 +12,13 @@ namespace PatientManagementSystem.Forms
 {
     public partial class AddEditPatientForm : Form
     {
+        public delegate void RecordEventHandler(Patient patient);
+
+        public event RecordEventHandler RecordInserted;
+        public event RecordEventHandler RecordUpdated;
         private IPatientRepository _repository;
         private Patient _editingPatient;
+        private Button btnSaveAndNew;
         private bool _isEditMode;
 
         // سازنده برای افزودن بیمار جدید
@@ -20,6 +28,10 @@ namespace PatientManagementSystem.Forms
             _isEditMode = false;
             _editingPatient = null;
             InitializeComponent();
+            errorProvider = new ErrorProvider();
+            errorToolTip = new ToolTip();
+            AttachValidationEvents();
+            errorProvider.BlinkStyle = ErrorBlinkStyle.NeverBlink;
             this.Text = "افزودن بیمار جدید";
             btnSave.Text = "ثبت بیمار";
         }
@@ -31,6 +43,9 @@ namespace PatientManagementSystem.Forms
             _editingPatient = patient;
             _isEditMode = true;
             InitializeComponent();
+            errorProvider = new ErrorProvider();
+            errorToolTip = new ToolTip();
+            btnSaveAndNew.Visible = false;
             this.Text = "ویرایش بیمار";
             btnSave.Text = "به‌روزرسانی";
             LoadPatientData();
@@ -38,110 +53,178 @@ namespace PatientManagementSystem.Forms
 
         private void InitializeComponent()
         {
-            this.lblNationalCode = new System.Windows.Forms.Label();
-            this.txtNationalCode = new System.Windows.Forms.TextBox();
-            this.lblFirstName = new System.Windows.Forms.Label();
-            this.txtFirstName = new System.Windows.Forms.TextBox();
-            this.lblLastName = new System.Windows.Forms.Label();
-            this.txtLastName = new System.Windows.Forms.TextBox();
-            this.lblDateOfBirth = new System.Windows.Forms.Label();
-            this.dtpDateOfBirth = new System.Windows.Forms.DateTimePicker();
-            this.lblPhone = new System.Windows.Forms.Label();
-            this.txtPhone = new System.Windows.Forms.TextBox();
-            this.lblAddress = new System.Windows.Forms.Label();
-            this.txtAddress = new System.Windows.Forms.TextBox();
-            this.btnSave = new System.Windows.Forms.Button();
-            this.btnCancel = new System.Windows.Forms.Button();
-            this.SuspendLayout();
-
-            // کد ملی
-            this.lblNationalCode.AutoSize = true;
-            this.lblNationalCode.Location = new System.Drawing.Point(340, 20);
-            this.lblNationalCode.Text = "کد ملی:";
-
-            this.txtNationalCode.Location = new System.Drawing.Point(150, 17);
-            this.txtNationalCode.Size = new System.Drawing.Size(184, 20);
-            this.txtNationalCode.MaxLength = 10;
-
-            // نام
-            this.lblFirstName.AutoSize = true;
-            this.lblFirstName.Location = new System.Drawing.Point(367, 55);
-            this.lblFirstName.Text = "نام:";
-
-            this.txtFirstName.Location = new System.Drawing.Point(150, 52);
-            this.txtFirstName.Size = new System.Drawing.Size(184, 20);
-
-            // نام خانوادگی
-            this.lblLastName.AutoSize = true;
-            this.lblLastName.Location = new System.Drawing.Point(333, 90);
-            this.lblLastName.Text = "نام خانوادگی:";
-
-            this.txtLastName.Location = new System.Drawing.Point(150, 87);
-            this.txtLastName.Size = new System.Drawing.Size(184, 20);
-
-            // تاریخ تولد
-            this.lblDateOfBirth.AutoSize = true;
-            this.lblDateOfBirth.Location = new System.Drawing.Point(341, 125);
-            this.lblDateOfBirth.Text = "تاریخ تولد:";
-
-            this.dtpDateOfBirth.Location = new System.Drawing.Point(150, 122);
-            this.dtpDateOfBirth.Size = new System.Drawing.Size(184, 20);
-            this.dtpDateOfBirth.MaxDate = DateTime.Now;
-
-            // تلفن
-            this.lblPhone.AutoSize = true;
-            this.lblPhone.Location = new System.Drawing.Point(360, 160);
-            this.lblPhone.Text = "تلفن:";
-
-            this.txtPhone.Location = new System.Drawing.Point(150, 157);
-            this.txtPhone.Size = new System.Drawing.Size(184, 20);
-            this.txtPhone.MaxLength = 11;
-
-            // آدرس
-            this.lblAddress.AutoSize = true;
-            this.lblAddress.Location = new System.Drawing.Point(356, 195);
-            this.lblAddress.Text = "آدرس:";
-
-            this.txtAddress.Location = new System.Drawing.Point(150, 192);
-            this.txtAddress.Size = new System.Drawing.Size(184, 60);
-            this.txtAddress.Multiline = true;
-
-            // دکمه ذخیره
-            this.btnSave.Location = new System.Drawing.Point(210, 270);
-            this.btnSave.Size = new System.Drawing.Size(100, 30);
-            this.btnSave.UseVisualStyleBackColor = true;
-            this.btnSave.Click += new System.EventHandler(this.btnSave_Click);
-
-            // دکمه انصراف
-            this.btnCancel.Location = new System.Drawing.Point(100, 270);
-            this.btnCancel.Size = new System.Drawing.Size(100, 30);
-            this.btnCancel.Text = "انصراف";
-            this.btnCancel.UseVisualStyleBackColor = true;
-            this.btnCancel.Click += new System.EventHandler(this.btnCancel_Click);
-
-            // تنظیمات فرم
-            this.ClientSize = new System.Drawing.Size(420, 320);
-            this.Controls.Add(this.btnCancel);
-            this.Controls.Add(this.btnSave);
-            this.Controls.Add(this.txtAddress);
-            this.Controls.Add(this.lblAddress);
-            this.Controls.Add(this.txtPhone);
-            this.Controls.Add(this.lblPhone);
-            this.Controls.Add(this.dtpDateOfBirth);
-            this.Controls.Add(this.lblDateOfBirth);
-            this.Controls.Add(this.txtLastName);
-            this.Controls.Add(this.lblLastName);
-            this.Controls.Add(this.txtFirstName);
-            this.Controls.Add(this.lblFirstName);
-            this.Controls.Add(this.txtNationalCode);
-            this.Controls.Add(this.lblNationalCode);
-            this.FormBorderStyle = FormBorderStyle.FixedDialog;
-            this.MaximizeBox = false;
-            this.StartPosition = FormStartPosition.CenterParent;
-            this.RightToLeft = RightToLeft.Yes;
-
-            this.ResumeLayout(false);
-            this.PerformLayout();
+            lblNationalCode = new Label();
+            txtNationalCode = new TextBox();
+            lblFirstName = new Label();
+            txtFirstName = new TextBox();
+            lblLastName = new Label();
+            txtLastName = new TextBox();
+            lblDateOfBirth = new Label();
+            dtpDateOfBirth = new DateTimePicker();
+            lblPhone = new Label();
+            txtPhone = new TextBox();
+            lblAddress = new Label();
+            txtAddress = new TextBox();
+            btnSave = new Button();
+            btnCancel = new Button();
+            btnSaveAndNew = new Button();
+            SuspendLayout();
+            // 
+            // lblNationalCode
+            // 
+            lblNationalCode.AutoSize = true;
+            lblNationalCode.Location = new Point(340, 20);
+            lblNationalCode.Name = "lblNationalCode";
+            lblNationalCode.Size = new Size(59, 20);
+            lblNationalCode.TabIndex = 13;
+            lblNationalCode.Text = "کد ملی:";
+            // 
+            // txtNationalCode
+            // 
+            txtNationalCode.Location = new Point(150, 17);
+            txtNationalCode.MaxLength = 10;
+            txtNationalCode.Name = "txtNationalCode";
+            txtNationalCode.Size = new Size(184, 27);
+            txtNationalCode.TabIndex = 12;
+            // 
+            // lblFirstName
+            // 
+            lblFirstName.AutoSize = true;
+            lblFirstName.Location = new Point(367, 55);
+            lblFirstName.Name = "lblFirstName";
+            lblFirstName.Size = new Size(30, 20);
+            lblFirstName.TabIndex = 11;
+            lblFirstName.Text = "نام:";
+            // 
+            // txtFirstName
+            // 
+            txtFirstName.Location = new Point(150, 52);
+            txtFirstName.Name = "txtFirstName";
+            txtFirstName.Size = new Size(184, 27);
+            txtFirstName.TabIndex = 10;
+            // 
+            // lblLastName
+            // 
+            lblLastName.AutoSize = true;
+            lblLastName.Location = new Point(333, 90);
+            lblLastName.Name = "lblLastName";
+            lblLastName.Size = new Size(93, 20);
+            lblLastName.TabIndex = 9;
+            lblLastName.Text = "نام خانوادگی:";
+            // 
+            // txtLastName
+            // 
+            txtLastName.Location = new Point(150, 87);
+            txtLastName.Name = "txtLastName";
+            txtLastName.Size = new Size(184, 27);
+            txtLastName.TabIndex = 8;
+            // 
+            // lblDateOfBirth
+            // 
+            lblDateOfBirth.AutoSize = true;
+            lblDateOfBirth.Location = new Point(341, 125);
+            lblDateOfBirth.Name = "lblDateOfBirth";
+            lblDateOfBirth.Size = new Size(72, 20);
+            lblDateOfBirth.TabIndex = 7;
+            lblDateOfBirth.Text = "تاریخ تولد:";
+            // 
+            // dtpDateOfBirth
+            // 
+            dtpDateOfBirth.Location = new Point(150, 122);
+            dtpDateOfBirth.MaxDate = new DateTime(2026, 9, 7, 12, 54, 21, 864);
+            dtpDateOfBirth.Name = "dtpDateOfBirth";
+            dtpDateOfBirth.Size = new Size(184, 27);
+            dtpDateOfBirth.TabIndex = 6;
+            // 
+            // lblPhone
+            // 
+            lblPhone.AutoSize = true;
+            lblPhone.Location = new Point(360, 160);
+            lblPhone.Name = "lblPhone";
+            lblPhone.Size = new Size(40, 20);
+            lblPhone.TabIndex = 5;
+            lblPhone.Text = "تلفن:";
+            // 
+            // txtPhone
+            // 
+            txtPhone.Location = new Point(150, 157);
+            txtPhone.MaxLength = 11;
+            txtPhone.Name = "txtPhone";
+            txtPhone.Size = new Size(184, 27);
+            txtPhone.TabIndex = 4;
+            // 
+            // lblAddress
+            // 
+            lblAddress.AutoSize = true;
+            lblAddress.Location = new Point(356, 195);
+            lblAddress.Name = "lblAddress";
+            lblAddress.Size = new Size(47, 20);
+            lblAddress.TabIndex = 3;
+            lblAddress.Text = "آدرس:";
+            // 
+            // txtAddress
+            // 
+            txtAddress.Location = new Point(150, 192);
+            txtAddress.Multiline = true;
+            txtAddress.Name = "txtAddress";
+            txtAddress.Size = new Size(184, 60);
+            txtAddress.TabIndex = 2;
+            // 
+            // btnSave
+            // 
+            btnSave.Location = new Point(189, 270);
+            btnSave.Name = "btnSave";
+            btnSave.Size = new Size(100, 30);
+            btnSave.TabIndex = 1;
+            btnSave.Text = "ذخیره";
+            btnSave.UseVisualStyleBackColor = true;
+            btnSave.Click += btnSave_Click;
+            // 
+            // btnCancel
+            // 
+            btnCancel.Location = new Point(83, 270);
+            btnCancel.Name = "btnCancel";
+            btnCancel.Size = new Size(100, 30);
+            btnCancel.TabIndex = 0;
+            btnCancel.Text = "انصراف";
+            btnCancel.UseVisualStyleBackColor = true;
+            btnCancel.Click += btnCancel_Click;
+            // 
+            // btnSaveAndNew
+            // 
+            btnSaveAndNew.Location = new Point(297, 270);
+            btnSaveAndNew.Name = "btnSaveAndNew";
+            btnSaveAndNew.Size = new Size(100, 30);
+            btnSaveAndNew.TabIndex = 14;
+            btnSaveAndNew.Text = "ذخیره و جدید";
+            btnSaveAndNew.UseVisualStyleBackColor = true;
+            btnSaveAndNew.Click += btnSaveAndNew_Click;
+            // 
+            // AddEditPatientForm
+            // 
+            ClientSize = new Size(420, 320);
+            Controls.Add(btnSaveAndNew);
+            Controls.Add(btnCancel);
+            Controls.Add(btnSave);
+            Controls.Add(txtAddress);
+            Controls.Add(lblAddress);
+            Controls.Add(txtPhone);
+            Controls.Add(lblPhone);
+            Controls.Add(dtpDateOfBirth);
+            Controls.Add(lblDateOfBirth);
+            Controls.Add(txtLastName);
+            Controls.Add(lblLastName);
+            Controls.Add(txtFirstName);
+            Controls.Add(lblFirstName);
+            Controls.Add(txtNationalCode);
+            Controls.Add(lblNationalCode);
+            FormBorderStyle = FormBorderStyle.FixedDialog;
+            MaximizeBox = false;
+            Name = "AddEditPatientForm";
+            RightToLeft = RightToLeft.Yes;
+            StartPosition = FormStartPosition.CenterParent;
+            ResumeLayout(false);
+            PerformLayout();
         }
 
         private System.Windows.Forms.Label lblNationalCode;
@@ -158,6 +241,9 @@ namespace PatientManagementSystem.Forms
         private System.Windows.Forms.TextBox txtAddress;
         private System.Windows.Forms.Button btnSave;
         private System.Windows.Forms.Button btnCancel;
+        private ToolTip errorToolTip;
+        private ErrorProvider errorProvider;
+
 
         private void LoadPatientData()
         {
@@ -168,71 +254,98 @@ namespace PatientManagementSystem.Forms
             txtPhone.Text = _editingPatient.Phone;
             txtAddress.Text = _editingPatient.Address;
         }
-
-        private bool ValidateFields()
+        private void AttachValidationEvents()
         {
-            if (string.IsNullOrEmpty(txtNationalCode.Text) || txtNationalCode.Text.Trim() == "")
-            {
-                ValidationHelper.ShowValidationError("وارد کردن کد ملی اجباری است.");
-                txtNationalCode.Focus();
-                return false;
-            }
+            txtNationalCode.TextChanged += (s, e) =>
+                errorProvider.SetError(txtNationalCode, "");
 
-            if (!ValidationHelper.IsValidNationalCode(txtNationalCode.Text))
-            {
-                ValidationHelper.ShowValidationError("کد ملی وارد شده نامعتبر است.");
-                txtNationalCode.Focus();
-                return false;
-            }
+            txtFirstName.TextChanged += (s, e) =>
+                errorProvider.SetError(txtFirstName, "");
 
-            Patient existing = _repository.GetPatientByNationalCode(txtNationalCode.Text);
-            if (existing != null)
+            txtLastName.TextChanged += (s, e) =>
+                errorProvider.SetError(txtLastName, "");
+
+            txtPhone.TextChanged += (s, e) =>
+                errorProvider.SetError(txtPhone, "");
+
+            txtAddress.TextChanged += (s, e) =>
+                errorProvider.SetError(txtAddress, "");
+        }
+        private bool ValidatePatient(Patient patient)
+        {
+            errorProvider.Clear();
+
+            var context = new ValidationContext(patient);
+            var results = new List<ValidationResult>();
+
+            bool isValid = Validator.TryValidateObject(
+                patient,
+                context,
+                results,
+                validateAllProperties: true
+            );
+
+            foreach (var result in results)
             {
-                if (!_isEditMode || existing.Id != _editingPatient.Id)
+                foreach (var memberName in result.MemberNames)
                 {
-                    ValidationHelper.ShowValidationError("این کد ملی قبلاً ثبت شده است.");
-                    txtNationalCode.Focus();
-                    return false;
+                    Control control = null;
+
+                    switch (memberName)
+                    {
+                        case nameof(Patient.NationalCode):
+                            control = txtNationalCode;
+                            break;
+
+                        case nameof(Patient.FirstName):
+                            control = txtFirstName;
+                            break;
+
+                        case nameof(Patient.LastName):
+                            control = txtLastName;
+                            break;
+
+                        case nameof(Patient.Phone):
+                            control = txtPhone;
+                            break;
+
+                        case nameof(Patient.Address):
+                            control = txtAddress;
+                            break;
+                    }
+
+                    if (control != null)
+                    {
+                        string message = result.ErrorMessage ?? "خطای نامشخص";
+
+                        errorProvider.SetError(control, message);
+                        errorProvider.SetIconAlignment(
+                            control,
+                            ErrorIconAlignment.MiddleRight
+                        );
+                    }
                 }
             }
 
-            if (string.IsNullOrEmpty(txtFirstName.Text) || txtFirstName.Text.Trim() == "")
-            {
-                ValidationHelper.ShowValidationError("وارد کردن نام اجباری است.");
-                txtFirstName.Focus();
-                return false;
-            }
-
-            if (string.IsNullOrEmpty(txtLastName.Text) || txtLastName.Text.Trim() == "")
-            {
-                ValidationHelper.ShowValidationError("وارد کردن نام خانوادگی اجباری است.");
-                txtLastName.Focus();
-                return false;
-            }
-
-            if (string.IsNullOrEmpty(txtPhone.Text) || txtPhone.Text.Trim() == "")
-            {
-                ValidationHelper.ShowValidationError ("وارد کردن شماره تلفن اجباری است.");
-                txtPhone.Focus();
-                return false;
-            }
+            return isValid;
+        }
 
 
-            if (!txtPhone.Text.IsMobileNumber())
-            {
-                ValidationHelper.ShowValidationError ("شماره تلفن نامعتبر است" );
-                txtPhone.Focus();
-                return false;
-            }
+        private bool ValidateFields()
+        {
+            errorProvider.Clear();
 
-            if (string.IsNullOrEmpty(txtAddress.Text) || txtAddress.Text.Trim() == "")
-            {
-                ValidationHelper.ShowValidationError ("وارد کردن آدرس اجباری است.");
-                txtAddress.Focus();
-                return false;
-            }
+            Patient patient = new Patient(
+                txtNationalCode.Text.Trim()
+            );
 
-            return true;
+            patient.FirstName = txtFirstName.Text.Trim();
+            patient.LastName = txtLastName.Text.Trim();
+            patient.DateOfBirth = dtpDateOfBirth.Value;
+            patient.Phone = txtPhone.Text.Trim();
+            patient.Address = txtAddress.Text.Trim();
+
+            return ValidatePatient(patient);
         }
 
         private void btnSave_Click(object sender, EventArgs e)
@@ -262,10 +375,20 @@ namespace PatientManagementSystem.Forms
                 success = _repository.AddPatient(patient);
                 if (success)
                     ValidationHelper.ShowSuccess("بیمار با موفقیت ثبت شد.");
+                RecordInserted?.Invoke(patient);
             }
 
             if (success)
             {
+                if (_isEditMode)
+                {
+                    RecordUpdated?.Invoke(patient);
+                }
+                else
+                {
+                    RecordInserted?.Invoke(patient);
+                }
+
                 this.DialogResult = DialogResult.OK;
                 this.Close();
             }
@@ -279,6 +402,40 @@ namespace PatientManagementSystem.Forms
         {
             this.DialogResult = DialogResult.Cancel;
             this.Close();
+        }
+
+        private void btnSaveAndNew_Click(object sender, EventArgs e)
+        {
+            if (!ValidateFields())
+                return;
+
+            Patient patient = new Patient(txtNationalCode.Text.Trim());
+
+            patient.FirstName = txtFirstName.Text.Trim();
+            patient.LastName = txtLastName.Text.Trim();
+            patient.DateOfBirth = dtpDateOfBirth.Value;
+            patient.Phone = txtPhone.Text.Trim();
+            patient.Address = txtAddress.Text.Trim();
+
+            bool success = _repository.AddPatient(patient);
+
+            if (success)
+            {
+                ValidationHelper.ShowSuccess("بیمار با موفقیت ثبت شد.");
+
+                txtNationalCode.Clear();
+                txtFirstName.Clear();
+                txtLastName.Clear();
+                txtPhone.Clear();
+                txtAddress.Clear();
+
+                txtNationalCode.Focus();
+            }
+            else
+            {
+                ValidationHelper.ShowValidationError("خطا در ذخیره اطلاعات.");
+            }
+
         }
     }
 }

@@ -45,7 +45,7 @@ namespace PatientManagementSystem.Data
 
         public bool Delete(int id)
         {
-            throw new NotImplementedException();
+            return DeletePatient(id);
         }
 
         public bool DeletePatient(int id)

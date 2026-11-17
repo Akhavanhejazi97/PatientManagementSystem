@@ -1,4 +1,6 @@
-﻿using PatientManagementSystem.Data;
+﻿using System.Data;
+using WinFormsApp2.Extensions;
+using PatientManagementSystem.Data;
 using PatientManagementSystem.Models;
 using System;
 using System.Collections.Generic;
@@ -63,7 +65,9 @@ namespace PatientManagementSystem.Forms
 
             List<Patient> results = repository.SearchPatients(keyword);
 
-            dgvResults.DataSource = results;
+            DataTable dataTable = WinFormsApp2.Extensions.DataTableExtensions.ToDataTable(results);
+
+            dgvResults.DataSource = dataTable;
         }
     }
 }

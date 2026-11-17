@@ -46,3 +46,8 @@ C:\Users\Asus\Desktop\-kebab-case--main\WinFormsApp2\bin\Debug\net10.0-windows\r
 C:\Users\Asus\Desktop\-kebab-case--main\WinFormsApp2\bin\Debug\net10.0-windows\runtimes\win-x86\native\sni.dll
 C:\Users\Asus\Desktop\-kebab-case--main\WinFormsApp2\bin\Debug\net10.0-windows\runtimes\unix\lib\net8.0\System.Data.SqlClient.dll
 C:\Users\Asus\Desktop\-kebab-case--main\WinFormsApp2\bin\Debug\net10.0-windows\runtimes\win\lib\net8.0\System.Data.SqlClient.dll
+C:\Users\Asus\Desktop\-kebab-case--main\WinFormsApp2\obj\Debug\net10.0-windows\WinFormsApp2.sourcelink.json
+C:\Users\Asus\Desktop\-kebab-case--main\WinFormsApp2\obj\Debug\net10.0-windows\PatientManagementSystem.Forms.SearchPatientForm.resources
+C:\Users\Asus\Desktop\-kebab-case--main\WinFormsApp2\obj\Debug\net10.0-windows\WinFormsApp2.Forms.LoginForm.resources
+C:\Users\Asus\Desktop\-kebab-case--main\WinFormsApp2\obj\Debug\net10.0-windows\WinFormsApp2.Forms.RegisterForm.resources
+C:\Users\Asus\Desktop\-kebab-case--main\WinFormsApp2\obj\Debug\net10.0-windows\WinFormsApp2.Forms.ForgotPasswordForm.resources

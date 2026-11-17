@@ -1,1 +1,5 @@
 C:\Users\Asus\Desktop\PatientManagementSystem\PatientManagementSystem\bin\Debug\PatientManagementSystem.exe.config
+C:\Users\Asus\Desktop\-kebab-case--main\PatientManagementSystem\obj\Debug\PatientManagementSystem.csproj.AssemblyReference.cache
+C:\Users\Asus\Desktop\-kebab-case--main\PatientManagementSystem\obj\Debug\PatientManagementSystem.Properties.Resources.resources
+C:\Users\Asus\Desktop\-kebab-case--main\PatientManagementSystem\obj\Debug\PatientManagementSystem.csproj.GenerateResource.cache
+C:\Users\Asus\Desktop\-kebab-case--main\PatientManagementSystem\obj\Debug\PatientManagementSystem.csproj.CoreCompileInputs.cache

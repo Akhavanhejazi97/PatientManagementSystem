@@ -1,9 +1,13 @@
+using System;
+using System.Data;
+using WinFormsApp2.Extensions;
 using PatientManagementSystem.Data;
 using PatientManagementSystem.Forms;
 using PatientManagementSystem.Models;
 using System;
 using System.Collections.Generic;
 using System.Windows.Forms;
+using WinFormsApp2.Helpers;
 using WinFormsApp2.Data;
 using WinFormsApp2.Forms;
 
@@ -14,19 +18,39 @@ namespace PatientManagementSystem
         private IPatientRepository _repository;
         private AddEditPatientForm _addEditForm;
         private Button btnAddDoctor;
+        private StatusStrip statusStrip;
+        private ToolStripStatusLabel lblLoggedInUser;
+        private ToolStripStatusLabel lblLoginTime;
         private Button btnEditDoctor;
         private Button btnDeleteDoctor;
         private SearchPatientForm _searchForm;
-
+        private Button btnLogout;
         private string _selectedDatabase;
+        private void PatientForm_RecordInserted(Patient patient)
+        {
+            LoadPatients();
+        }
 
-        public MainForm() : this("List")
+        private void PatientForm_RecordUpdated(Patient patient)
+        {
+            LoadPatients();
+        }
+        private readonly IUserRepository _userRepository;
+        private User _loggedInUser;
+
+        public MainForm() : this("List", null, null)
         {
         }
 
-        public MainForm(string selectedDatabase)
+        public MainForm(string selectedDatabase) : this(selectedDatabase, null, null)
+        {
+        }
+
+        public MainForm(string selectedDatabase, User loggedInUser, IUserRepository userRepository)
         {
             _selectedDatabase = selectedDatabase;
+            _loggedInUser = loggedInUser;
+            _userRepository = userRepository;
 
             if (_selectedDatabase == "SQL")
             {
@@ -43,15 +67,24 @@ namespace PatientManagementSystem
 
             InitializeComponent();
 
+            if (_loggedInUser != null)
+            {
+                lblLoggedInUser.Text = "کاربر واردشده: " +
+                    _loggedInUser.FirstName + " " + _loggedInUser.LastName;
+            }
+
+            lblLoginTime.Text = "زمان ورود: " +
+                DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss");
+
             LoadPatients();
-        
         }
 
         private void InitializeComponent()
         {
             dgvPatients = new DataGridView();
+            columnEdit = new DataGridViewButtonColumn();
+            columnDelete = new DataGridViewButtonColumn();
             btnAdd = new Button();
-            btnEdit = new Button();
             btnDelete = new Button();
             btnSearch = new Button();
             btnRefresh = new Button();
@@ -60,7 +93,12 @@ namespace PatientManagementSystem
             btnAddDoctor = new Button();
             btnEditDoctor = new Button();
             btnDeleteDoctor = new Button();
+            statusStrip = new StatusStrip();
+            lblLoggedInUser = new ToolStripStatusLabel();
+            lblLoginTime = new ToolStripStatusLabel();
+            btnLogout = new Button();
             ((System.ComponentModel.ISupportInitialize)dgvPatients).BeginInit();
+            statusStrip.SuspendLayout();
             SuspendLayout();
             // 
             // dgvPatients
@@ -68,6 +106,7 @@ namespace PatientManagementSystem
             dgvPatients.AllowUserToAddRows = false;
             dgvPatients.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
             dgvPatients.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
+            dgvPatients.Columns.AddRange(new DataGridViewColumn[] { columnEdit, columnDelete });
             dgvPatients.Location = new Point(14, 127);
             dgvPatients.Margin = new Padding(3, 4, 3, 4);
             dgvPatients.MultiSelect = false;
@@ -77,6 +116,19 @@ namespace PatientManagementSystem
             dgvPatients.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
             dgvPatients.Size = new Size(869, 486);
             dgvPatients.TabIndex = 0;
+            dgvPatients.CellContentClick += dgvPatients_CellContentClick;
+            // 
+            // columnEdit
+            // 
+            columnEdit.MinimumWidth = 6;
+            columnEdit.Name = "columnEdit";
+            columnEdit.ReadOnly = true;
+            // 
+            // columnDelete
+            // 
+            columnDelete.MinimumWidth = 6;
+            columnDelete.Name = "columnDelete";
+            columnDelete.ReadOnly = true;
             // 
             // btnAdd
             // 
@@ -89,36 +141,21 @@ namespace PatientManagementSystem
             btnAdd.UseVisualStyleBackColor = true;
             btnAdd.Click += btnAdd_Click;
             // 
-            // btnEdit
-            // 
-            btnEdit.Location = new Point(135, 9);
-            btnEdit.Margin = new Padding(3, 4, 3, 4);
-            btnEdit.Name = "btnEdit";
-            btnEdit.Size = new Size(114, 54);
-            btnEdit.TabIndex = 2;
-            btnEdit.Text = "ویرایش بیمار";
-            btnEdit.UseVisualStyleBackColor = true;
-            btnEdit.Click += btnEdit_Click;
-            // 
             // btnDelete
             // 
-            btnDelete.Location = new Point(256, 9);
-            btnDelete.Margin = new Padding(3, 4, 3, 4);
+            btnDelete.Location = new Point(0, 0);
             btnDelete.Name = "btnDelete";
-            btnDelete.Size = new Size(114, 54);
-            btnDelete.TabIndex = 3;
-            btnDelete.Text = "حذف بیمار";
-            btnDelete.UseVisualStyleBackColor = true;
-            btnDelete.Click += btnDelete_Click;
+            btnDelete.Size = new Size(75, 23);
+            btnDelete.TabIndex = 0;
             // 
             // btnSearch
             // 
-            btnSearch.Location = new Point(376, 9);
+            btnSearch.Location = new Point(510, 9);
             btnSearch.Margin = new Padding(3, 4, 3, 4);
             btnSearch.Name = "btnSearch";
             btnSearch.Size = new Size(114, 54);
             btnSearch.TabIndex = 4;
-            btnSearch.Text = "جستجوی پیشرفته";
+            btnSearch.Text = "جستجو";
             btnSearch.UseVisualStyleBackColor = true;
             btnSearch.Click += btnSearch_Click;
             // 
@@ -180,20 +217,45 @@ namespace PatientManagementSystem
             btnDeleteDoctor.Text = "حذف پزشک";
             btnDeleteDoctor.UseVisualStyleBackColor = true;
             // 
+            // statusStrip
+            // 
+            statusStrip.ImageScalingSize = new Size(20, 20);
+            statusStrip.Items.AddRange(new ToolStripItem[] { lblLoggedInUser, lblLoginTime });
+            statusStrip.Location = new Point(0, 603);
+            statusStrip.Name = "statusStrip";
+            statusStrip.Size = new Size(939, 26);
+            statusStrip.TabIndex = 0;
+            // 
+            // lblLoggedInUser
+            // 
+            lblLoggedInUser.Name = "lblLoggedInUser";
+            lblLoggedInUser.Size = new Size(0, 20);
+            // 
+            // lblLoginTime
+            // 
+            lblLoginTime.Name = "lblLoginTime";
+            lblLoginTime.Size = new Size(0, 20);
+            // 
+            // btnLogout
+            // 
+            btnLogout.Location = new Point(156, 9);
+            btnLogout.Name = "btnLogout";
+            btnLogout.Size = new Size(114, 51);
+            btnLogout.TabIndex = 8;
+            btnLogout.Text = "خروج از حساب";
+            btnLogout.UseVisualStyleBackColor = true;
+            btnLogout.Click += btnLogout_Click;
+            // 
             // MainForm
             // 
             AutoScaleDimensions = new SizeF(8F, 20F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(939, 629);
-            Controls.Add(btnDeleteDoctor);
-            Controls.Add(btnEditDoctor);
-            Controls.Add(btnAddDoctor);
+            Controls.Add(btnLogout);
+            Controls.Add(statusStrip);
             Controls.Add(lblSearch);
             Controls.Add(txtSearch);
-            Controls.Add(btnRefresh);
             Controls.Add(btnSearch);
-            Controls.Add(btnDelete);
-            Controls.Add(btnEdit);
             Controls.Add(btnAdd);
             Controls.Add(dgvPatients);
             Margin = new Padding(3, 4, 3, 4);
@@ -202,13 +264,79 @@ namespace PatientManagementSystem
             StartPosition = FormStartPosition.CenterScreen;
             Text = "سیستم مدیریت بیماران";
             ((System.ComponentModel.ISupportInitialize)dgvPatients).EndInit();
+            statusStrip.ResumeLayout(false);
+            statusStrip.PerformLayout();
             ResumeLayout(false);
             PerformLayout();
+        }
+
+        private void dgvPatients_CellContentClick(object? sender, DataGridViewCellEventArgs e)
+        {
+            if (e.RowIndex < 0)
+                return;
+
+            DataRowView rowView =
+     (DataRowView)dgvPatients.Rows[e.RowIndex].DataBoundItem;
+
+            Patient selectedPatient = new Patient(
+                rowView["NationalCode"].ToString())
+            {
+                Id = Convert.ToInt32(rowView["Id"]),
+                FirstName = rowView["FirstName"].ToString(),
+                LastName = rowView["LastName"].ToString(),
+                DateOfBirth = Convert.ToDateTime(rowView["DateOfBirth"]),
+                Phone = rowView["Phone"].ToString(),
+                Address = rowView["Address"].ToString(),
+                RegistrationDate = Convert.ToDateTime(rowView["RegistrationDate"])
+            };
+
+            if (dgvPatients.Columns[e.ColumnIndex] == columnEdit)
+            {
+                _addEditForm = new AddEditPatientForm(_repository, selectedPatient);
+                _addEditForm.RecordUpdated += PatientForm_RecordUpdated;
+                _addEditForm.Show();
+            }
+
+            if (dgvPatients.Columns[e.ColumnIndex] == columnDelete)
+            {
+                DialogResult result = MessageBox.Show(
+                    "آیا از حذف بیمار " + selectedPatient.FirstName + " " + selectedPatient.LastName + " مطمئن هستید؟",
+                    "تأیید حذف",
+                    MessageBoxButtons.YesNo,
+                    MessageBoxIcon.Question);
+
+                if (result == DialogResult.Yes)
+                {
+                    bool success = _repository.Delete(selectedPatient.Id);
+
+                    if (success)
+                    {
+                        MessageBox.Show(
+                            "بیمار با موفقیت حذف شد.",
+                            "موفقیت",
+                            MessageBoxButtons.OK,
+                            MessageBoxIcon.Information);
+
+                        LoadPatients();
+                    }
+                    else
+                    {
+                        MessageBox.Show(
+                            "خطا در حذف بیمار.",
+                            "خطا",
+                            MessageBoxButtons.OK,
+                            MessageBoxIcon.Error);
+                    }
+                }
+            }
+
         }
 
         // ============== متغیرهای فرم ==============
         private System.Windows.Forms.DataGridView dgvPatients;
         private System.Windows.Forms.Button btnAdd;
+        private DataGridViewButtonColumn columnEdit;
+        private DataGridViewButtonColumn columnDelete;
         private System.Windows.Forms.Button btnEdit;
         private System.Windows.Forms.Button btnDelete;
         private System.Windows.Forms.Button btnSearch;
@@ -220,8 +348,12 @@ namespace PatientManagementSystem
         private void LoadPatients()
         {
             List<Patient> patients = _repository.GetAll();
+
+            DataTable dataTable =
+                WinFormsApp2.Extensions.DataTableExtensions.ToDataTable(patients);
+
             dgvPatients.DataSource = null;
-            dgvPatients.DataSource = patients;
+            dgvPatients.DataSource = dataTable;
 
             if (dgvPatients.Columns.Count > 0)
             {
@@ -248,10 +380,8 @@ namespace PatientManagementSystem
         private void btnAdd_Click(object sender, EventArgs e)
         {
             _addEditForm = new AddEditPatientForm(_repository);
-            if (_addEditForm.ShowDialog() == DialogResult.OK)
-            {
-                LoadPatients();
-            }
+            _addEditForm.RecordInserted += PatientForm_RecordInserted;
+            _addEditForm.Show();
         }
 
         // ============== ویرایش بیمار ==============
@@ -265,12 +395,17 @@ namespace PatientManagementSystem
             }
 
             Patient selectedPatient = (Patient)dgvPatients.SelectedRows[0].DataBoundItem;
+
             _addEditForm = new AddEditPatientForm(_repository, selectedPatient);
-            if (_addEditForm.ShowDialog() == DialogResult.OK)
-            {
-                LoadPatients();
-            }
+            _addEditForm.RecordUpdated += PatientForm_RecordUpdated;
+
+            _addEditForm.Show();
         }
+
+
+
+
+
 
         // ============== حذف بیمار ==============
         private void btnDelete_Click(object sender, EventArgs e)
@@ -322,18 +457,26 @@ namespace PatientManagementSystem
         }
 
         // ============== جستجوی سریع ==============
+
         private void txtSearch_TextChanged(object sender, EventArgs e)
         {
-            if (string.IsNullOrEmpty(txtSearch.Text) || txtSearch.Text.Trim() == "")
+            if (string.IsNullOrWhiteSpace(txtSearch.Text))
             {
                 LoadPatients();
                 return;
             }
 
-            List<Patient> results = _repository.Search(txtSearch.Text);
+            List<Patient> results = _repository.Search(txtSearch.Text.Trim());
+
+            DataTable dataTable =
+                WinFormsApp2.Extensions.DataTableExtensions.ToDataTable(results);
+
             dgvPatients.DataSource = null;
-            dgvPatients.DataSource = results;
+            dgvPatients.DataSource = dataTable;
         }
+
+
+
 
         private void lblSearch_Click(object sender, EventArgs e)
         {
@@ -349,6 +492,35 @@ namespace PatientManagementSystem
 
             doctorForm.ShowDialog();
 
+        }
+
+        private void button1_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        private void btnLogout_Click(object sender, EventArgs e)
+        {
+            DialogResult result = MessageBox.Show(
+                "آیا می‌خواهید از حساب کاربری خارج شوید؟",
+                "خروج از حساب",
+                MessageBoxButtons.YesNo,
+                MessageBoxIcon.Question
+            );
+
+            if (result == DialogResult.Yes)
+            {
+                RememberMeStore.Clear();
+
+                WinFormsApp2.Forms.LoginForm loginForm =
+                    new WinFormsApp2.Forms.LoginForm(
+                        _userRepository,
+                        _selectedDatabase
+                    );
+
+                loginForm.Show();
+                this.Hide();
+            }
         }
     }
 }
